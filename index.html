@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>厚度計器差值計算器 - Weiwei</title>
+    <style>
+        /* 字型設定：英文 Calibri, 中文 微軟正黑體 */
+        body {
+            font-family: "Calibri", "Microsoft JhengHei", sans-serif;
+            background-color: #f4f7f9;
+            color: #2d3748;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 650px;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            padding: 25px 20px;
+            margin-bottom: 25px;
+            box-sizing: border-box;
+        }
+
+        @media (min-width: 576px) {
+            .card {
+                padding: 35px;
+            }
+        }
+
+        h2 {
+            text-align: center;
+            margin-top: 0;
+            color: #1a365d;
+            font-size: 24px;
+            margin-bottom: 25px;
+        }
+
+        .section-label {
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: block;
+            color: #3182ce;
+            border-left: 4px solid #3182ce;
+            padding-left: 10px;
+            font-size: 16px;
+        }
+
+        /* 預設（電腦版）網格佈局 */
+        .header-row {
+            display: grid;
+            grid-template-columns: 1.2fr repeat(3, 1fr) 1.2fr;
+            gap: 10px;
+            font-size: 13px;
+            color: #718096;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .row-item {
+            display: grid;
+            grid-template-columns: 1.2fr repeat(3, 1fr) 1.2fr;
+            gap: 10px;
+            margin-bottom: 12px;
+            align-items: center;
+        }
+
+        /* 手機版專用標籤，電腦版隱藏 */
+        .mobile-label {
+            display: none;
+        }
+
+        /* 所有輸入框通用樣式：確保文字與游標緊貼右側 */
+        input[type="number"] {
+            width: 100%;
+            padding: 11px 12px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 15px;
+            box-sizing: border-box;
+            outline: none;
+            text-align: right; /* 預設靠右對齊 */
+            direction: ltr;    
+            font-family: "Calibri", "Microsoft JhengHei";
+            background-color: #eef5fc; 
+            transition: all 0.2s;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        /* 強制點擊輸入框（Focus）時，游標與打字位置依然卡在最右側 */
+        input[type="number"]:focus {
+            border-color: #3182ce;
+            background-color: #fff;
+            box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+            text-align: right !important; /* 點擊時強制全面靠右 */
+        }
+
+        /* 修改 Placeholder 樣式，使其完美靠右對齊 */
+        input[type="number"]::placeholder {
+            color: #a0aec0;
+            opacity: 0.8;
+            text-align: right;
+        }
+
+        /* 拔除網頁原生上下調節小箭頭，避免干擾游標定位 */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+
+        /* 標準值輸入框樣式（平常置中呈現，點擊時游標彈回右側） */
+        .std-val {
+            text-align: center; /* 平常沒點選時維持置中，畫面較美觀 */
+            font-weight: bold;
+            background-color: #f7fafc;
+            border-color: #cbd5e0;
+        }
+        .std-val:focus {
+            text-align: right !important; /* 點擊（Focus）時，游標與文字立刻靠右 */
+        }
+        .std-val::placeholder {
+            text-align: center; /* 提示字預設置中 */
+        }
+        .std-val:focus::placeholder {
+            text-align: right; /* 點擊時提示字跟著靠右 */
+        }
+
+        .calc-res {
+            font-size: 15px;
+            font-weight: bold;
+            color: #2d3748;
+            text-align: center;
+            font-family: "Calibri", sans-serif;
+            padding: 5px 0;
+        }
+
+        .waiting {
+            color: #a0aec0;
+            font-style: italic;
+            font-size: 13px;
+            font-weight: normal;
+        }
+
+        .result-area {
+            margin-top: 25px;
+            padding: 20px;
+            background-color: #ebf8ff;
+            border-radius: 12px;
+            border: 1px solid #bee3f8;
+        }
+
+        .result-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .final-status {
+            font-size: 22px;
+        }
+
+        .status-pass {
+            color: #38a169;
+        }
+
+        .status-fail {
+            color: #e53e3e;
+        }
+
+        .status-wait {
+            color: #718096;
+            font-size: 18px;
+            font-style: italic;
+            font-weight: normal;
+        }
+
+        .tolerance-badge {
+            background-color: #fffaf0;
+            padding: 3px 10px;
+            border-radius: 6px;
+            border: 1px solid #feebc8;
+            color: #dd6b20;
+            font-size: 14px;
+        }
+
+        .divider {
+            border: 0;
+            border-top: 1px dashed #e2e8f0;
+            margin: 20px 0;
+        }
+
+        .footer-info {
+            text-align: center;
+            font-size: 13px;
+            color: #718096;
+            line-height: 2;
+        }
+
+        .visit-badge {
+            background: #e2e8f0;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-weight: bold;
+            color: #4a5568;
+            margin-left: 5px;
+        }
+
+        .clear-btn {
+            width: 100%;
+            padding: 14px;
+            background-color: #edf2f7;
+            color: #4a5568;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 20px;
+            font-family: "Microsoft JhengHei";
+        }
+
+        .clear-btn:hover {
+            background-color: #e2e8f0;
+        }
+
+        /* ==========================================================================
+           RWD 手機版樣式微調 (螢幕寬度小於 550px 時觸發)
+           ========================================================================== */
+        @media (max-width: 550px) {
+            .header-row {
+                display: none;
+            }
+
+            .row-item {
+                display: flex;
+                flex-direction: column;
+                background: #f8fafc;
+                padding: 14px;
+                border-radius: 10px;
+                margin-bottom: 16px;
+                border: 1px solid #edf2f7;
+            }
+
+            .input-group-mobile {
+                display: grid;
+                grid-template-columns: 80px 1fr;
+                align-items: center;
+                width: 100%;
+                margin-bottom: 8px;
+            }
+
+            .mobile-label {
+                display: block;
+                font-size: 13px;
+                color: #4a5568;
+                font-weight: bold;
+                text-align: left;
+                padding-left: 4px;
+            }
+
+            .calc-res {
+                width: 100%;
+                text-align: right;
+                padding: 8px 4px 0 4px;
+                box-sizing: border-box;
+                border-top: 1px dashed #e2e8f0;
+                margin-top: 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <h2>厚度計器差值計算器</h2>
+
+        <div class="header-row">
+            <div>標準值</div>
+            <div>量測值 1</div>
+            <div>量測值 2</div>
+            <div>量測值 3</div>
+            <div>器差值結果</div>
+        </div>
+
+        <span class="section-label">厚度量測校正點</span>
+        <div class="row-item thickness-row">
+            <div class="input-group-mobile"><span class="mobile-label">標準值</span><input type="number" step="0.001" class="std-val" placeholder="0.000" oninput="calculate()" onblur="formatToThreeDecimals(this)"></div>
+            <div class="input-group-mobile"><span class="mobile-label">量測值 1</span><input type="number" step="0.001" class="m1-val" placeholder="0.000" oninput="calculate()" onblur="formatToThreeDecimals(this)"></div>
+            <div class="input-group-mobile"><span class="mobile-label">量測值 2</span><input type="number" step="0.001" class="m2-val" placeholder="0.000" oninput="calculate()" onblur="formatToThreeDecimals(this)"></div>
+            <div class="input-group-mobile"><span class="mobile-label">量測值 3</span><input type="number" step="0.001" class="m3-val" placeholder="0.000" oninput="calculate()" onblur="formatToThreeDecimals(this)"></div>
+            <div class="calc-res waiting">等待數據輸入...</div>
+        </div>
+        <div class="row-item thickness-row">
+            <div class="input-group-mobile"><span class="mobile-label">標準值</span><input type="number" step="0.001" class="std-val" placeholder="0.000" oninput="calculate()" onblur="formatToThreeDecimals(this)"></div>
+            <div class="input-group-mobile"><span class="mobile-label">量測值 1</span><input type="number" step="0.001" class="m1-val" placeholder="0.000" oninput="calculate()" onblur="formatToThreeDecimals(this)"></div>
+            <div class="input-group-mobile"><span class="mobile-label">量測值 2</span><input type="number" step="0.001" class="m2-val" placeholder="0.000" oninput="calculate()" onblur="formatToThreeDecimals(this)"></div>
+            <div class="input-group-mobile"><span class="mobile-label">量測值 3</span><input type="number" step="0.001" class="m3-val" placeholder="0.000" oninput="calculate()" onblur="formatToThreeDecimals(this)"></div>
+            <div class="calc-res waiting">等待數據輸入...</div>
+        </div>
+        <div class="row-item thickness-row">
+            <div class="input-group-mobile"><span class="mobile-label">標準值</span><input type="number" step="0.001" class="std-val" placeholder="0.000" oninput="calculate()" onblur="formatToThreeDecimals(this)"></div>
+            <div class="input-group-mobile"><span class="mobile-label">量測值 1</span><input type="number" step="0.001" class="m1-val" placeholder="0.000" oninput="calculate()" onblur="formatToThreeDecimals(this)"></div>
+            <div class="input-group-mobile"><span class="mobile-label">量測值 2</span><input type="number" step="0.001" class="m2-val" placeholder="0.000" oninput="calculate()" onblur="formatToThreeDecimals(this)"></div>
+            <div class="input-group-mobile"><span class="mobile-label">量測值 3</span><input type="number" step="0.001" class="m3-val" placeholder="0.000" oninput="calculate()" onblur="formatToThreeDecimals(this)"></div>
+            <div class="calc-res waiting">等待數據輸入...</div>
+        </div>
+        <div class="row-item thickness-row">
+            <div class="input-group-mobile"><span class="mobile-label">標準值</span><input type="number" step="0.001" class="std-val" placeholder="0.000" oninput="calculate()" onblur="formatToThreeDecimals(this)"></div>
+            <div class="input-group-mobile"><span class="mobile-label">量測值 1</span><input type="number" step="0.001" class="m1-val" placeholder="0.000" oninput="calculate()" onblur="formatToThreeDecimals(this)"></div>
+            <div class="input-group-mobile"><span class="mobile-label">量測值 2</span><input type="number" step="0.001" class="m2-val" placeholder="0.000" oninput="calculate()" onblur="formatToThreeDecimals(this)"></div>
+            <div class="input-group-mobile"><span class="mobile-label">量測值 3</span><input type="number" step="0.001" class="m3-val" placeholder="0.000" oninput="calculate()" onblur="formatToThreeDecimals(this)"></div>
+            <div class="calc-res waiting">等待數據輸入...</div>
+        </div>
+        <div class="row-item thickness-row">
+            <div class="input-group-mobile"><span class="mobile-label">標準值</span><input type="number" step="0.001" class="std-val" placeholder="0.000" oninput="calculate()" onblur="formatToThreeDecimals(this)"></div>
+            <div class="input-group-mobile"><span class="mobile-label">量測值 1</span><input type="number" step="0.001" class="m1-val" placeholder="0.000" oninput="calculate()" onblur="formatToThreeDecimals(this)"></div>
+            <div class="input-group-mobile"><span class="mobile-label">量測值 2</span><input type="number" step="0.001" class="m2-val" placeholder="0.000" oninput="calculate()" onblur="formatToThreeDecimals(this)"></div>
+            <div class="input-group-mobile"><span class="mobile-label">量測值 3</span><input type="number" step="0.001" class="m3-val" placeholder="0.000" oninput="calculate()" onblur="formatToThreeDecimals(this)"></div>
+            <div class="calc-res waiting">等待數據輸入...</div>
+        </div>
+        <div class="row-item thickness-row">
+            <div class="input-group-mobile"><span class="mobile-label">標準值</span><input type="number" step="0.001" class="std-val" placeholder="0.000" oninput="calculate()" onblur="formatToThreeDecimals(this)"></div>
+            <div class="input-group-mobile"><span class="mobile-label">量測值 1</span><input type="number" step="0.001" class="m1-val" placeholder="0.000" oninput="calculate()" onblur="formatToThreeDecimals(this)"></div>
+            <div class="input-group-mobile"><span class="mobile-label">量測值 2</span><input type="number" step="0.001" class="m2-val" placeholder="0.000" oninput="calculate()" onblur="formatToThreeDecimals(this)"></div>
+            <div class="input-group-mobile"><span class="mobile-label">量測值 3</span><input type="number" step="0.001" class="m3-val" placeholder="0.000" oninput="calculate()" onblur="formatToThreeDecimals(this)"></div>
+            <div class="calc-res waiting">等待數據輸入...</div>
+        </div>
+
+        <div class="result-area">
+            <div class="result-line" style="margin-bottom: 12px;">
+                <span style="color: #4a5568;">允收標準設定（圖表要求）</span>
+                <span class="tolerance-badge">± 0.004 mm</span>
+            </div>
+            <div class="result-line" style="border-top: 2px dashed #90cdf4; padding-top: 12px;">
+                <span style="color: #1a365d;">總體校正結果：</span>
+                <span id="final-judgment" class="final-status status-wait">等待數據輸入...</span>
+            </div>
+        </div>
+
+        <button class="clear-btn" onclick="clearAll()">重置清除所有數據</button>
+    </div>
+
+    <div class="footer-info">
+        <div>作者：Weiwei | 版本：v2.0.0 | 最後更新日期：2026/06/04</div>
+        <div>拜訪次數：<span class="visit-badge" id="visitCount">0</span></div>
+    </div>
+</div>
+
+<script>
+    window.onload = function() {
+        let count = localStorage.getItem('weiwei_thickness_calc_visits') || 0;
+        count = parseInt(count) + 1;
+        localStorage.setItem('weiwei_thickness_calc_visits', count);
+        document.getElementById('visitCount').innerText = count;
+    };
+
+    // 精確進行四捨五入的函數
+    function roundTo(num, decimals) {
+        return Math.round((num + Number.EPSILON) * Math.pow(10, decimals)) / Math.pow(10, decimals);
+    }
+
+    // 當輸入框失去焦點時自動補齊三位小數（例如 25 -> 25.000）
+    function formatToThreeDecimals(input) {
+        if (input.value !== "") {
+            const num = parseFloat(input.value);
+            if (!isNaN(num)) {
+                input.value = num.toFixed(3);
+            }
+        }
+        calculate();
+    }
+
+    function calculate() {
+        let validErrorValues = [];
+        let totalRows = 0;
+        let completeRows = 0;
+
+        // 處理厚度計量測數據
+        const rows = document.querySelectorAll('.thickness-row');
+        rows.forEach(row => {
+            const stdVal = parseFloat(row.querySelector('.std-val').value);
+            const m1 = parseFloat(row.querySelector('.m1-val').value);
+            const m2 = parseFloat(row.querySelector('.m2-val').value);
+            const m3 = parseFloat(row.querySelector('.m3-val').value);
+            const resDiv = row.querySelector('.calc-res');
+
+            // 只要該行有任何一個格子開始輸入，就列入統計項目
+            if (!isNaN(stdVal) || !isNaN(m1) || !isNaN(m2) || !isNaN(m3)) {
+                totalRows++;
+            } else {
+                resDiv.textContent = "等待數據輸入...";
+                resDiv.className = "calc-res waiting";
+                return;
+            }
+
+            // 必須四格皆填寫完成，才開始計算該行器差
+            if (isNaN(stdVal) || isNaN(m1) || isNaN(m2) || isNaN(m3)) {
+                resDiv.textContent = "等待數據輸入...";
+                resDiv.className = "calc-res waiting";
+                return;
+            }
+
+            completeRows++;
+            const average = (m1 + m2 + m3) / 3;
+            // 器差值計算公式：ROUND(平均量測值 - 標準值, 4)
+            const errorVal = roundTo(average - stdVal, 4);
+
+            // 支援手機與桌機面板的不同顯化
+            if (window.innerWidth <= 550) {
+                resDiv.innerHTML = `<span style="font-size:13px; color:#718096; font-weight:normal; float:left;">器差值：</span>${errorVal.toFixed(4)}`;
+            } else {
+                resDiv.textContent = errorVal.toFixed(4);
+            }
+            resDiv.className = "calc-res";
+            validErrorValues.push(errorVal);
+        });
+
+        // 總體判定邏輯
+        const judgmentEl = document.getElementById('final-judgment');
+        
+        if (validErrorValues.length === 0) {
+            judgmentEl.textContent = "等待數據輸入...";
+            judgmentEl.className = "final-status status-wait";
+            judgmentEl.style.fontSize = "18px";
+            return;
+        }
+
+        // 找出所有已填寫完欄位中的最大與最小器差值
+        const maxError = Math.max(...validErrorValues);
+        const minError = Math.min(...validErrorValues);
+
+        const roundedMax = roundTo(maxError, 4);
+        const roundedMin = roundTo(minError, 4);
+
+        // 依照上傳圖片的允收判斷標準：必須落在 ±0.004 mm 之間 (即 <= 0.004 且 >= -0.004)
+        if (roundedMax <= 0.004 && roundedMin >= -0.004) {
+            if (completeRows < totalRows) {
+                judgmentEl.textContent = "合格 (尚有項目未填寫)";
+                judgmentEl.className = "final-status status-pass";
+                judgmentEl.style.fontSize = "16px";
+            } else {
+                judgmentEl.textContent = "合格";
+                judgmentEl.className = "final-status status-pass";
+                judgmentEl.style.fontSize = "22px";
+            }
+        } else {
+            judgmentEl.textContent = "不合格";
+            judgmentEl.className = "final-status status-fail";
+            judgmentEl.style.fontSize = "22px";
+        }
+    }
+
+    window.addEventListener('resize', calculate);
+
+    function clearAll() {
+        document.querySelectorAll('.row-item input[type="number"]').forEach(input => {
+            input.value = "";
+        });
+        document.querySelectorAll('.calc-res').forEach(div => {
+            div.textContent = "等待數據輸入...";
+            div.className = "calc-res waiting";
+        });
+        const judgmentEl = document.getElementById('final-judgment');
+        judgmentEl.textContent = "等待數據輸入...";
+        judgmentEl.className = "final-status status-wait";
+        judgmentEl.style.fontSize = "18px";
+    }
+</script>
+
+</body>
+</html>
